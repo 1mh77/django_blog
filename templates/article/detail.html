@@ -1,0 +1,150 @@
+<!-- extends表明此页继承自 base.html 文件 -->
+{% extends "base.html" %}
+<!-- 犯得最多的错误都还是拼写错误，还是要好好注意一下 -->
+{% load staticfiles %}
+
+<!-- 写入 base.html 中定义的 title -->
+{% block title %}
+    文章详情
+{% endblock title %}
+
+<!-- 写入 base.html 中定义的 content -->
+{% block content %}
+
+<!-- 文章详情 -->
+<div class="container">
+    <div class="row">
+        <!-- 标题及作者 -->
+        <!--<h1 class="col-12 mt-4 mb-4">{{ article.title }}</h1>
+        <div class="col-12 alert alert-success">作者: {{ article.author }}
+            <a href="#" onclick="confirm_safe_delete()">删除文章</a>
+            <a href="{% url 'article:article_update' article.id %}">编辑文章</a>
+            -->
+        <h1 class="col-12 mt-4 mb-4">{{ article.title }}</h1>
+        <div class="col-12 alert alert-success">
+            <div>
+                作者：{{ article.author}}
+                {% if user == article.author %}
+                    . <a href="#" onclick="confirm_delete()">删除文章</a>
+                    . <a href="{% url 'article:article_update' article.id %}">
+                        编辑文章
+                    </a>
+                {% endif %}
+            </div>
+            <div>
+                浏览：{{ article.total_views }}
+            </div>
+            <form
+                style="display:none;"
+                id="safe_delete"
+                action="{% url 'article:article_safe_delete' article.id %}"
+                method="POST"
+                >
+                {% csrf_token %}
+                <button type="submit">发送</button>
+            </form>
+        </div>
+        <!-- 文章正文-->
+        <div class="col-12">
+            <!-- 在article。body后面加上|safe过滤器，
+            管道符是django中过滤器的写法，|safe等于给
+            article.body贴了个标签，让这一段字符不用转意
+            -->
+            <!-- 一开始这个article.body后面没加过滤器，发现真的就成html
+            文本了，能看得出标题，代码的标签，加了过滤器就能够正常显示markdown的效果了
+            -->
+            <p>{{ article.body|safe }}</p>
+        </div>
+
+        <!--发表评论-->
+        <hr>
+        {% if user.is_authenticated %}
+            <div>
+                <form
+                    action="{% url 'comment:post_comment' article.id %}"
+                    method="POST">
+                    {% csrf_token %}
+                        <div class="form-group">
+                            <label for="body">
+                                <strong>
+                                    我也要发言：
+                                </strong>
+                            </label>
+                            <textarea
+                                type="text"
+                                class="form-control"
+                                id="body"
+                                name="body"
+                                rows="4"></textarea>
+                        </div>
+
+                        <!--提交按钮-->
+                    <button type="submit" class="btn-primary" >发送</button>
+                </form>
+            </div>
+            <br>
+        {% else %}
+            <br>
+            <h5 class="row justify-content-center">
+                请<a href="{% url 'userprofile:login' %}">登录</a>后回复
+            </h5>
+            <br>
+        {% endif %}
+
+        <!--显示评论-->
+        <h5>共有{{ comments.count }}条评论</h5>
+        <div>
+            {% for comment in comments %}
+                <hr>
+                <p>
+                    <strong style="color: pink">
+                        {{ comment.user }}
+                    </strong> 于
+                    <span style="color: blue">
+                        {{ comment.created|date:"Y-m-d H:i:s" }}
+                    </span> 时说
+                </p>
+            <!--<pre>标签里面的文本千万不能缩进-->
+                <pre style="font-family: inherit; font-size: 1em;">
+{{ comment.body }}</pre>
+            <!--不写这个endfor会没法闭合-->
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+
+<!-- 我自己打的代码没法运行，所以是我拼写有问题 -->
+
+<script>
+    // 删除文章的函数
+    function confirm_delete() {
+        // 调用layer弹窗组件
+        layer.open({
+            // 弹窗标题
+            title: "确认删除",
+            // 正文
+            content: "确认删除这篇文章吗？",
+            // 点击确定按钮后调用的回调函数
+            yes: function(index, layero) {
+                // 指定应当前往的 url
+                location.href='{% url "article:article_delete" article.id %}'
+            },
+        })
+    }
+</script>
+
+<script>
+function confirm_safe_delete() {
+    layer.open({
+        title: "确认删除",
+        content: "确认删除这篇文章吗？",
+        yes: function(index, layero) {
+            $('form#safe_delete button').click();
+            layer.close(index);
+        }
+    })
+}
+</script>
+
+{% endblock content %}
